@@ -23,3 +23,5 @@ RoxygenNote: 7.3.2
 Depends:
     R (>= 3.5)
 Imports: optiSolve, deaR
+URL: https://github.com/vjbolos/SdeaR
+BugReports: https://github.com/vjbolos/SdeaR/issues
