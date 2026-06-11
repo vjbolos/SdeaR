@@ -67,15 +67,16 @@
 #' \deqn{\texttt{var\_output[r, j]}=\mathrm{Var}\left( \tilde{y}_{rj}\right) ,}
 #' for \eqn{1\leq i\leq m}, \eqn{1\leq r\leq s} and \eqn{1\leq j\leq n}.
 #'
-#' @usage make_deadata_stoch(datadea = NULL,
-#'           var_input = NULL,
-#'           var_output = NULL,
-#'           cov_input = NULL,
-#'           cov_output = NULL,
-#'           cov_II = NULL,
-#'           cov_OO = NULL,
-#'           cov_IO = NULL,
-#'           cov_matrix = NULL)
+#' @usage
+#' make_deadata_stoch(datadea = NULL,
+#'                    var_input = NULL,
+#'                    var_output = NULL,
+#'                    cov_input = NULL,
+#'                    cov_output = NULL,
+#'                    cov_II = NULL,
+#'                    cov_OO = NULL,
+#'                    cov_IO = NULL,
+#'                    cov_matrix = NULL)
 #'
 #' @param datadea The \code{deadata} object.
 #' @param var_input A matrix of size \code{m} x \code{n}, where \code{m} is the
@@ -164,7 +165,9 @@
 #' Managerial and Decision Economics, Vol. 14, No. 6, 541-554.
 #'
 #' @examples
-#' # Example 1
+#'
+#' # Example 1.
+#'
 #' library(deaR)
 #' data("Coll_Blasco_2006")
 #' ni <- 2 # number of inputs
@@ -187,6 +190,7 @@
 #'                                   cov_output = cov_output)
 #'
 #' # Example 2. Deterministic data with one stochastic input.
+#'
 #' library(deaR)
 #' dmunames <- c("A", "B", "C")
 #' nd <- length(dmunames) # Number of DMUs
@@ -214,7 +218,8 @@
 #' datadea_stoch <- make_deadata_stoch(datadea,
 #'                                     cov_input = covX)
 #'
-#' # Example 3. Replication of Program Follow Through data in Land et al. (1993)
+#' # Example 3. Replication of Program Follow Through data in Land et al. (1993).
+#'
 #' library(deaR)
 #' data("PFT1981")
 #' # Selecting DMUs in Program Follow Through (PFT)

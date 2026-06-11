@@ -5,14 +5,14 @@
 \title{make_deadata_stoch}
 \usage{
 make_deadata_stoch(datadea = NULL,
-          var_input = NULL,
-          var_output = NULL,
-          cov_input = NULL,
-          cov_output = NULL,
-          cov_II = NULL,
-          cov_OO = NULL,
-          cov_IO = NULL,
-          cov_matrix = NULL)
+                   var_input = NULL,
+                   var_output = NULL,
+                   cov_input = NULL,
+                   cov_output = NULL,
+                   cov_II = NULL,
+                   cov_OO = NULL,
+                   cov_IO = NULL,
+                   cov_matrix = NULL)
 }
 \arguments{
 \item{datadea}{The \code{deadata} object.}
@@ -159,7 +159,9 @@ such that
 for \eqn{1\leq i\leq m}, \eqn{1\leq r\leq s} and \eqn{1\leq j\leq n}.
 }
 \examples{
-# Example 1
+
+# Example 1.
+
 library(deaR)
 data("Coll_Blasco_2006")
 ni <- 2 # number of inputs
@@ -182,6 +184,7 @@ data_stoch2 <- make_deadata_stoch(datadea = data_example,
                                   cov_output = cov_output)
 
 # Example 2. Deterministic data with one stochastic input.
+
 library(deaR)
 dmunames <- c("A", "B", "C")
 nd <- length(dmunames) # Number of DMUs
@@ -209,7 +212,8 @@ covX[2, , ] <- matrix(c(1.4, 0.9, 0.6, 0, 1.5, 0.7, 0, 0, 1.2),
 datadea_stoch <- make_deadata_stoch(datadea,
                                     cov_input = covX)
 
-# Example 3. Replication of Program Follow Through data in Land et al. (1993)
+# Example 3. Replication of Program Follow Through data in Land et al. (1993).
+
 library(deaR)
 data("PFT1981")
 # Selecting DMUs in Program Follow Through (PFT)

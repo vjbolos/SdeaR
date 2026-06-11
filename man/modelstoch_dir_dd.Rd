@@ -5,24 +5,25 @@
 \title{Chance Constrained Directional Models with Deterministic Directions}
 \usage{
 modelstoch_dir_dd(datadea,
-            alpha = 0.05,
-            dmu_eval = NULL,
-            dmu_ref = NULL,
-            dir_input = NULL,
-            dir_output = NULL,
-            rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
-            L = 1,
-            U = 1,
-            solver = c("alabama", "cccp", "cccp2", "slsqp"),
-            give_X = TRUE,
-            n_attempts_max = 5,
-            maxslack = FALSE,
-            weight_slack_i = 1,
-            weight_slack_o = 1,
-            compute_target = TRUE,
-            returnqp = FALSE,
-            silent_ud = FALSE,
-            ...)
+                  alpha = 0.05,
+                  dmu_eval = NULL,
+                  dmu_ref = NULL,
+                  dir_input = NULL,
+                  dir_output = NULL,
+                  rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
+                  L = 1,
+                  U = 1,
+                  solver = c("alabama", "cccp", "cccp2", "slsqp"),
+                  give_X = TRUE,
+                  n_attempts_max = 5,
+                  maxslack = FALSE,
+                  weight_slack_i = 1,
+                  weight_slack_o = 1,
+                  compute_target = TRUE,
+                  returnqp = FALSE,
+                  silent_ud = FALSE,
+                  parallel = FALSE,
+                  ...)
 }
 \arguments{
 \item{datadea}{The data of class \code{deadata_stoch}, including \code{n} DMUs,
@@ -84,6 +85,9 @@ max slack solution.}
 (objective function and constraints) of stage 1.}
 
 \item{silent_ud}{Logical, to avoid warnings related with undesirable variables.}
+
+\item{parallel}{Logical, if \code{TRUE}, the DMUs are computed in parallel
+(default \code{FALSE}).}
 
 \item{...}{Other parameters, like the initial vector \code{X}, to be passed to the solver.}
 }
@@ -171,6 +175,7 @@ where \eqn{\Phi } is the standard normal distribution, and
 \examples{
 \donttest{
 # Example 1.
+
 library(deaR)
 data("Coll_Blasco_2006")
 ni <- 2 # number of inputs
@@ -187,6 +192,7 @@ data_stoch <- make_deadata_stoch(datadea = data_example,
 # Evaluate the sixth DMU
 Collstochdirdd <- modelstoch_dir_dd(data_stoch, dmu_eval = 6)
 efficiencies(Collstochdirdd)
+
 }
 
 }

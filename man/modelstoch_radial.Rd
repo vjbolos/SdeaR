@@ -5,25 +5,26 @@
 \title{Chance Constrained Radial Models}
 \usage{
 modelstoch_radial(datadea,
-            alpha = 0.05,
-            dmu_eval = NULL,
-            dmu_ref = NULL,
-            orientation = c("io", "oo"),
-            rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
-            L = 1,
-            U = 1,
-            solver = c("alabama", "cccp", "cccp2", "slsqp"),
-            give_X = TRUE,
-            n_attempts_max = 5,
-            maxslack = FALSE,
-            weight_slack_i = 1,
-            weight_slack_o = 1,
-            vtrans_i = NULL,
-            vtrans_o = NULL,
-            compute_target = TRUE,
-            returnqp = FALSE,
-            silent_ud = FALSE,
-            ...)
+                  alpha = 0.05,
+                  dmu_eval = NULL,
+                  dmu_ref = NULL,
+                  orientation = c("io", "oo"),
+                  rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
+                  L = 1,
+                  U = 1,
+                  solver = c("alabama", "cccp", "cccp2", "slsqp"),
+                  give_X = TRUE,
+                  n_attempts_max = 5,
+                  maxslack = FALSE,
+                  weight_slack_i = 1,
+                  weight_slack_o = 1,
+                  vtrans_i = NULL,
+                  vtrans_o = NULL,
+                  compute_target = TRUE,
+                  returnqp = FALSE,
+                  silent_ud = FALSE,
+                  parallel = FALSE,
+                  ...)
 }
 \arguments{
 \item{datadea}{The data of class \code{deadata_stoch}, including \code{n} DMUs,
@@ -84,6 +85,9 @@ max slack solution.}
 (objective function and constraints) of stage 1.}
 
 \item{silent_ud}{Logical, to avoid warnings related with undesirable variables.}
+
+\item{parallel}{Logical, if \code{TRUE}, the DMUs are computed in parallel
+(default \code{FALSE}).}
 
 \item{...}{Other parameters, like the initial vector \code{X}, to be passed to the solver.}
 }
@@ -168,6 +172,7 @@ where \eqn{\Phi } is the standard normal distribution, and
 \examples{
 \donttest{
 # Example 1.
+
 library(deaR)
 data("Coll_Blasco_2006")
 ni <- 2 # number of inputs
@@ -182,10 +187,12 @@ data_stoch <- make_deadata_stoch(datadea = data_example,
                                  var_input = var_input,
                                  var_output = var_output)
 # Evaluate the sixth DMU
-Collstoch <- modelstoch_radial(data_stoch, dmu_eval = 6)
+Collstoch <- modelstoch_radial(data_stoch,
+                               dmu_eval = 6)
 efficiencies(Collstoch)
 
 # Example 2. Deterministic data with one stochastic input.
+
 library(deaR)
 dmunames <- c("A", "B", "C")
 nd <- length(dmunames) # Number of DMUs
@@ -217,9 +224,9 @@ res <- modelstoch_radial(datadea_stoch,
                          alpha = alpha,
                          rts = "vrs")
 efficiencies(res)
-}
 
-# Example 3. Replication of results in Land et al. (1993)
+# Example 3. Replication of results in Land et al. (1993).
+
 library(deaR)
 data("PFT1981")
 # Selecting DMUs in Program Follow Through (PFT)
@@ -229,11 +236,40 @@ PFT <- make_deadata(PFT,
                     outputs = 7:9)
 c <- 0.5
 var_output <- matrix(c^2, nrow = 3, ncol = 49)
-PFT_stoch <- make_deadata_stoch(datadea = PFT, var_output = var_output)
+PFT_stoch <- make_deadata_stoch(datadea = PFT,
+                                var_output = var_output)
 # Evaluate the second DMU
-res <- modelstoch_radial(PFT_stoch, dmu_eval = 2)
+res <- modelstoch_radial(PFT_stoch,
+                         dmu_eval = 2)
 efficiencies(res)
+}
+\dontrun{
 
+# Example 3b. Replication of results in Land et al. (1993) parallelized.
+
+library(deaR)
+library(doParallel)
+data("PFT1981")
+# Selecting DMUs in Program Follow Through (PFT)
+PFT <- PFT1981[1:49, ]
+PFT <- make_deadata(PFT,
+                    inputs = 2:6,
+                    outputs = 7:9)
+c <- 0.5
+var_output <- matrix(c^2, nrow = 3, ncol = 49)
+PFT_stoch <- make_deadata_stoch(datadea = PFT,
+                                var_output = var_output)
+
+# Preparing parallelization
+no_cores <- detectCores() - 1
+cl <- makeCluster(no_cores)
+registerDoParallel(no_cores)
+# Evaluate all DMUs
+res <- modelstoch_radial(PFT_stoch,
+                         parallel = TRUE)
+stopImplicitCluster()
+efficiencies(res)
+}
 }
 \references{
 Cooper, W.W.; Deng, H.; Huang, Z.; Li, S.X. (2002). “Chance constrained programming

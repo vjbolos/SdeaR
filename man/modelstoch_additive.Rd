@@ -5,20 +5,21 @@
 \title{Chance Constrained Additive E-model.}
 \usage{
 modelstoch_additive(datadea,
-               alpha = 0.05,
-               dmu_eval = NULL,
-               dmu_ref = NULL,
-               orientation = NULL,
-               weight_slack_i = 1,
-               weight_slack_o = 1,
-               rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
-               L = 1,
-               U = 1,
-               solver = c("alabama", "cccp", "cccp2", "slsqp"),
-               give_X = TRUE,
-               n_attempts_max = 5,
-               returnqp = FALSE,
-               ...)
+                    alpha = 0.05,
+                    dmu_eval = NULL,
+                    dmu_ref = NULL,
+                    orientation = NULL,
+                    weight_slack_i = 1,
+                    weight_slack_o = 1,
+                    rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
+                    L = 1,
+                    U = 1,
+                    solver = c("alabama", "cccp", "cccp2", "slsqp"),
+                    give_X = TRUE,
+                    n_attempts_max = 5,
+                    returnqp = FALSE,
+                    parallel = FALSE,
+                    ...)
 }
 \arguments{
 \item{datadea}{The data of class \code{deadata_stoch}, including \code{n} DMUs,
@@ -65,6 +66,9 @@ does not converge. Each attempt uses a different initial vector.}
 
 \item{returnqp}{Logical. If it is \code{TRUE}, it returns the quadratic
 problems (objective function and constraints).}
+
+\item{parallel}{Logical, if \code{TRUE}, the DMUs are computed in parallel
+(default \code{FALSE}).}
 
 \item{...}{Other parameters, like the initial vector \code{X}, to be passed
 to the solver.}

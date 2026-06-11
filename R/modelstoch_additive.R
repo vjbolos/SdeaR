@@ -64,21 +64,23 @@
 #' @note A DMU is \eqn{\alpha}-stochastically efficient if and only if the optimal
 #' objective value of the problem, (\code{objval}), is zero (or less than zero).
 #'
-#' @usage modelstoch_additive(datadea,
-#'                alpha = 0.05,
-#'                dmu_eval = NULL,
-#'                dmu_ref = NULL,
-#'                orientation = NULL,
-#'                weight_slack_i = 1,
-#'                weight_slack_o = 1,
-#'                rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
-#'                L = 1,
-#'                U = 1,
-#'                solver = c("alabama", "cccp", "cccp2", "slsqp"),
-#'                give_X = TRUE,
-#'                n_attempts_max = 5,
-#'                returnqp = FALSE,
-#'                ...)
+#' @usage
+#' modelstoch_additive(datadea,
+#'                     alpha = 0.05,
+#'                     dmu_eval = NULL,
+#'                     dmu_ref = NULL,
+#'                     orientation = NULL,
+#'                     weight_slack_i = 1,
+#'                     weight_slack_o = 1,
+#'                     rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
+#'                     L = 1,
+#'                     U = 1,
+#'                     solver = c("alabama", "cccp", "cccp2", "slsqp"),
+#'                     give_X = TRUE,
+#'                     n_attempts_max = 5,
+#'                     returnqp = FALSE,
+#'                     parallel = FALSE,
+#'                     ...)
 #'
 #' @param datadea The data of class \code{deadata_stoch}, including \code{n} DMUs,
 #' and the expected values of \code{m} inputs and \code{s} outputs.
@@ -111,6 +113,8 @@
 #' does not converge. Each attempt uses a different initial vector.
 #' @param returnqp Logical. If it is \code{TRUE}, it returns the quadratic
 #' problems (objective function and constraints).
+#' @param parallel Logical, if \code{TRUE}, the DMUs are computed in parallel
+#' (default \code{FALSE}).
 #' @param ... Other parameters, like the initial vector \code{X}, to be passed
 #' to the solver.
 #'
@@ -140,9 +144,8 @@
 #' and Measures in DEA". Journal of Productivity Analysis, 11, p. 5-42.
 #' \doi{10.1023/A:1007701304281}
 #'
-#'
-#'
 #' @import optiSolve stats
+#' @importFrom foreach foreach %dopar%
 #'
 #' @export
 
@@ -161,6 +164,7 @@ modelstoch_additive <-
            give_X = TRUE,
            n_attempts_max = 5,
            returnqp = FALSE,
+           parallel = FALSE,
            ...) {
 
     # Checking whether datadea is of class "deadata_stoch" or not...
@@ -290,9 +294,6 @@ modelstoch_additive <-
                  paste("sigma_O", 1:no, sep = "_"))
     nvar <- ndr + 2 * (ni + no)
 
-    DMU <- vector(mode = "list", length = nde)
-    names(DMU) <- dmunames[dmu_eval]
-
     ###########################
 
     # Lower and upper bounds constraints
@@ -357,130 +358,263 @@ modelstoch_additive <-
 
     qclist <- vector(mode = "list", length = 2 * (ni + no))
 
-    for (i in 1:nde) {
+    # For loop ------
+    if (parallel) {
 
-      ii <- dmu_eval[i]
+      DMU <- foreach(i = 1:nde) %dopar% {
 
-      # Objective function coefficients
-      f.obj <- linfun(a = c(rep(0, ndr), weight_slack_i[, i],
-                            weight_slack_o[, i], rep(0, ni + no)),
-                      id = namevar)
+        ii <- dmu_eval[i]
 
-      # Right hand side vector
-      f.rhs <- c(input[, ii], output[, ii], rep(0, nnci + nnco), f.rhs.rs)
+        # Objective function coefficients
+        f.obj <- linfun(a = c(rep(0, ndr), weight_slack_i[, i],
+                              weight_slack_o[, i], rep(0, ni + no)),
+                        id = namevar)
 
-      lincon <- lincon(A = f.con, dir = f.dir, val = f.rhs, id = namevar)
+        # Right hand side vector
+        f.rhs <- c(input[, ii], output[, ii], rep(0, nnci + nnco), f.rhs.rs)
 
-      covXo <- matrix(covX[, ii, dmu_ref], nrow = ni, ncol = ndr)
-      covYo <- matrix(covY[, ii, dmu_ref], nrow = no, ncol = ndr)
-      ain[, 1:ndr] <- -2 * covXo
-      valin <- -covX[, ii, ii]
-      aout[, 1:ndr] <- -2 * covYo
-      valout <- -covY[, ii, ii]
+        lincon <- lincon(A = f.con, dir = f.dir, val = f.rhs, id = namevar)
 
-      quadconina <- vector(mode = "list", length = ni)
-      quadconinb <- quadconina
-      quadconouta <- vector(mode = "list", length = no)
-      quadconoutb <- quadconouta
-      for (j in 1:ni) {
-        if (j %in% nc_inputs) {
-          quadconina[[j]] <- NULL
-          quadconinb[[j]] <- NULL
-        } else {
-          quadconina[[j]] <- quadcon(Q = Qin[j, , ], a = ain[j, ], val = valin[j], id = namevar)
-          quadconinb[[j]] <- quadcon(Q = -Qin[j, , ], a = -ain[j, ], val = -valin[j], id = namevar)
-        }
-      }
-      for (j in 1:no) {
-        if (j %in% nc_outputs) {
-          quadconouta[[j]] <- NULL
-          quadconoutb[[j]] <- NULL
-        } else {
-          quadconouta[[j]] <- quadcon(Q = Qout[j, , ], a = aout[j, ], val = valout[j], id = namevar)
-          quadconoutb[[j]] <- quadcon(Q = -Qout[j, , ], a = -aout[j, ], val = -valout[j], id = namevar)
-        }
-      }
+        covXo <- matrix(covX[, ii, dmu_ref], nrow = ni, ncol = ndr)
+        covYo <- matrix(covY[, ii, dmu_ref], nrow = no, ncol = ndr)
+        ain[, 1:ndr] <- -2 * covXo
+        valin <- -covX[, ii, ii]
+        aout[, 1:ndr] <- -2 * covYo
+        valout <- -covY[, ii, ii]
 
-      mycop <- cop(f = f.obj, max = TRUE, lb = lbcon1, ub = ubcon1, lc = lincon)
-      qclist <- c(quadconina, quadconinb, quadconouta, quadconoutb)
-      auxkk <- which(sapply(qclist, is.null))
-      if (length(auxkk) > 0) {
-        qclist <- qclist[-auxkk] # remove NULLs from non-controllable
-      }
-      mycop$qc <- qclist
-
-      if (returnqp) {
-
-        DMU[[i]] <- mycop
-
-      } else {
-
-        n_attempts <- 1
-
-        while (n_attempts <= n_attempts_max) {
-
-          # Initial vector
-          if ((n_attempts == 1) && give_X && (ii %in% dmu_ref)) {
-            Xini <- rep(0, nvar)
-            Xini[which(dmu_ref == ii)] <- 1
-            names(Xini) <- namevar
+        quadconina <- vector(mode = "list", length = ni)
+        quadconinb <- quadconina
+        quadconouta <- vector(mode = "list", length = no)
+        quadconoutb <- quadconouta
+        for (j in 1:ni) {
+          if (j %in% nc_inputs) {
+            quadconina[[j]] <- NULL
+            quadconinb[[j]] <- NULL
           } else {
-            Xini <- NULL
+            quadconina[[j]] <- quadcon(Q = Qin[j, , ], a = ain[j, ], val = valin[j], id = namevar)
+            quadconinb[[j]] <- quadcon(Q = -Qin[j, , ], a = -ain[j, ], val = -valin[j], id = namevar)
           }
+        }
+        for (j in 1:no) {
+          if (j %in% nc_outputs) {
+            quadconouta[[j]] <- NULL
+            quadconoutb[[j]] <- NULL
+          } else {
+            quadconouta[[j]] <- quadcon(Q = Qout[j, , ], a = aout[j, ], val = valout[j], id = namevar)
+            quadconoutb[[j]] <- quadcon(Q = -Qout[j, , ], a = -aout[j, ], val = -valout[j], id = namevar)
+          }
+        }
 
-          res <- solvecop(op = mycop, solver = solver, quiet = TRUE, X = Xini, ...)
+        mycop <- cop(f = f.obj, max = TRUE, lb = lbcon1, ub = ubcon1, lc = lincon)
+        qclist <- c(quadconina, quadconinb, quadconouta, quadconoutb)
+        auxkk <- which(sapply(qclist, is.null))
+        if (length(auxkk) > 0) {
+          qclist <- qclist[-auxkk] # remove NULLs from non-controllable
+        }
+        mycop$qc <- qclist
+
+        if (returnqp) {
+
+          mycop
+
+        } else {
+
+          n_attempts <- 1
+
+          while (n_attempts <= n_attempts_max) {
+
+            # Initial vector
+            if ((n_attempts == 1) && give_X && (ii %in% dmu_ref)) {
+              Xini <- rep(0, nvar)
+              Xini[which(dmu_ref == ii)] <- 1
+              names(Xini) <- namevar
+            } else {
+              Xini <- NULL
+            }
+
+            res <- solvecop(op = mycop, solver = solver, quiet = TRUE, X = Xini, ...)
+
+            if (res$status == "successful convergence") {
+              n_attempts <- n_attempts_max
+            }
+            n_attempts <- n_attempts + 1
+
+          }
 
           if (res$status == "successful convergence") {
-            n_attempts <- n_attempts_max
+
+            res <- res$x
+
+            lambda <- res[1:ndr]
+            names(lambda) <- dmunames[dmu_ref]
+            slack_input <- res[(ndr + 1) : (ndr + ni)]
+            names(slack_input) <- inputnames
+            slack_output <- res[(ndr + ni + 1) : (ndr + ni + no)]
+            names(slack_output) <- outputnames
+            sigma_input <- res[(ndr + ni + no + 1):(ndr + ni + no + ni)]
+            names(sigma_input) <- inputnames
+            sigma_output <- res[(ndr + 2 * ni + no + 1):nvar]
+            names(sigma_output) <- outputnames
+
+            target_input <- as.vector(inputref %*% lambda)
+            target_output <- as.vector(outputref %*% lambda)
+            names(target_input) <- inputnames
+            names(target_output) <- outputnames
+
+            objval <- weight_slack_i[, i] %*% slack_input + weight_slack_o[, i] %*% slack_output
+
+          } else {
+
+            objval <- NA
+            lambda <- NA
+            sigma_input <- NA
+            sigma_output <- NA
+            slack_input <- NA
+            slack_output <- NA
+            target_input <- NA
+            target_output <- NA
+
           }
-          n_attempts <- n_attempts + 1
+
+          list(objval = objval,
+               lambda = lambda,
+               slack_input = slack_input, slack_output = slack_output,
+               target_input = target_input, target_output = target_output,
+               sigma_input = sigma_input, sigma_output = sigma_output)
 
         }
+      }
 
-        if (res$status == "successful convergence") {
+    } else {
 
-          res <- res$x
+      DMU <- vector(mode = "list", length = nde)
 
-          lambda <- res[1:ndr]
-          names(lambda) <- dmunames[dmu_ref]
-          slack_input <- res[(ndr + 1) : (ndr + ni)]
-          names(slack_input) <- inputnames
-          slack_output <- res[(ndr + ni + 1) : (ndr + ni + no)]
-          names(slack_output) <- outputnames
-          sigma_input <- res[(ndr + ni + no + 1):(ndr + ni + no + ni)]
-          names(sigma_input) <- inputnames
-          sigma_output <- res[(ndr + 2 * ni + no + 1):nvar]
-          names(sigma_output) <- outputnames
+      for (i in 1:nde) {
 
-          target_input <- as.vector(inputref %*% lambda)
-          target_output <- as.vector(outputref %*% lambda)
-          names(target_input) <- inputnames
-          names(target_output) <- outputnames
+        ii <- dmu_eval[i]
 
-          objval <- weight_slack_i[, i] %*% slack_input + weight_slack_o[, i] %*% slack_output
+        # Objective function coefficients
+        f.obj <- linfun(a = c(rep(0, ndr), weight_slack_i[, i],
+                              weight_slack_o[, i], rep(0, ni + no)),
+                        id = namevar)
+
+        # Right hand side vector
+        f.rhs <- c(input[, ii], output[, ii], rep(0, nnci + nnco), f.rhs.rs)
+
+        lincon <- lincon(A = f.con, dir = f.dir, val = f.rhs, id = namevar)
+
+        covXo <- matrix(covX[, ii, dmu_ref], nrow = ni, ncol = ndr)
+        covYo <- matrix(covY[, ii, dmu_ref], nrow = no, ncol = ndr)
+        ain[, 1:ndr] <- -2 * covXo
+        valin <- -covX[, ii, ii]
+        aout[, 1:ndr] <- -2 * covYo
+        valout <- -covY[, ii, ii]
+
+        quadconina <- vector(mode = "list", length = ni)
+        quadconinb <- quadconina
+        quadconouta <- vector(mode = "list", length = no)
+        quadconoutb <- quadconouta
+        for (j in 1:ni) {
+          if (j %in% nc_inputs) {
+            quadconina[[j]] <- NULL
+            quadconinb[[j]] <- NULL
+          } else {
+            quadconina[[j]] <- quadcon(Q = Qin[j, , ], a = ain[j, ], val = valin[j], id = namevar)
+            quadconinb[[j]] <- quadcon(Q = -Qin[j, , ], a = -ain[j, ], val = -valin[j], id = namevar)
+          }
+        }
+        for (j in 1:no) {
+          if (j %in% nc_outputs) {
+            quadconouta[[j]] <- NULL
+            quadconoutb[[j]] <- NULL
+          } else {
+            quadconouta[[j]] <- quadcon(Q = Qout[j, , ], a = aout[j, ], val = valout[j], id = namevar)
+            quadconoutb[[j]] <- quadcon(Q = -Qout[j, , ], a = -aout[j, ], val = -valout[j], id = namevar)
+          }
+        }
+
+        mycop <- cop(f = f.obj, max = TRUE, lb = lbcon1, ub = ubcon1, lc = lincon)
+        qclist <- c(quadconina, quadconinb, quadconouta, quadconoutb)
+        auxkk <- which(sapply(qclist, is.null))
+        if (length(auxkk) > 0) {
+          qclist <- qclist[-auxkk] # remove NULLs from non-controllable
+        }
+        mycop$qc <- qclist
+
+        if (returnqp) {
+
+          DMU[[i]] <- mycop
 
         } else {
 
-          objval <- NA
-          lambda <- NA
-          sigma_input <- NA
-          sigma_output <- NA
-          slack_input <- NA
-          slack_output <- NA
-          target_input <- NA
-          target_output <- NA
+          n_attempts <- 1
+
+          while (n_attempts <= n_attempts_max) {
+
+            # Initial vector
+            if ((n_attempts == 1) && give_X && (ii %in% dmu_ref)) {
+              Xini <- rep(0, nvar)
+              Xini[which(dmu_ref == ii)] <- 1
+              names(Xini) <- namevar
+            } else {
+              Xini <- NULL
+            }
+
+            res <- solvecop(op = mycop, solver = solver, quiet = TRUE, X = Xini, ...)
+
+            if (res$status == "successful convergence") {
+              n_attempts <- n_attempts_max
+            }
+            n_attempts <- n_attempts + 1
+
+          }
+
+          if (res$status == "successful convergence") {
+
+            res <- res$x
+
+            lambda <- res[1:ndr]
+            names(lambda) <- dmunames[dmu_ref]
+            slack_input <- res[(ndr + 1) : (ndr + ni)]
+            names(slack_input) <- inputnames
+            slack_output <- res[(ndr + ni + 1) : (ndr + ni + no)]
+            names(slack_output) <- outputnames
+            sigma_input <- res[(ndr + ni + no + 1):(ndr + ni + no + ni)]
+            names(sigma_input) <- inputnames
+            sigma_output <- res[(ndr + 2 * ni + no + 1):nvar]
+            names(sigma_output) <- outputnames
+
+            target_input <- as.vector(inputref %*% lambda)
+            target_output <- as.vector(outputref %*% lambda)
+            names(target_input) <- inputnames
+            names(target_output) <- outputnames
+
+            objval <- weight_slack_i[, i] %*% slack_input + weight_slack_o[, i] %*% slack_output
+
+          } else {
+
+            objval <- NA
+            lambda <- NA
+            sigma_input <- NA
+            sigma_output <- NA
+            slack_input <- NA
+            slack_output <- NA
+            target_input <- NA
+            target_output <- NA
+
+          }
+
+          DMU[[i]] <- list(objval = objval,
+                           lambda = lambda,
+                           slack_input = slack_input, slack_output = slack_output,
+                           target_input = target_input, target_output = target_output,
+                           sigma_input = sigma_input, sigma_output = sigma_output)
 
         }
-
-        DMU[[i]] <- list(objval = objval,
-                         lambda = lambda,
-                         slack_input = slack_input, slack_output = slack_output,
-                         target_input = target_input, target_output = target_output,
-                         sigma_input = sigma_input, sigma_output = sigma_output)
-
       }
-
     }
+
+    names(DMU) <- dmunames[dmu_eval]
 
     # Checking if a DMU is in its own reference set (when rts = "grs")
     if (rts == "grs") {

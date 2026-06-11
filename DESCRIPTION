@@ -1,7 +1,7 @@
 Package: SdeaR
 Type: Package
 Title: Stochastic Data Envelopment Analysis
-Version: 1.0.2
+Version: 1.1.0
 Authors@R: c(person(given = "Vicente",
                       family = "Bolós",
                       role = c("aut", "cre"),
@@ -19,9 +19,14 @@ Description: Set of functions for Stochastic Data Envelopment Analysis. Chance c
 License: GPL
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.3.2
-Depends:
-    R (>= 3.5)
-Imports: optiSolve, deaR
+RoxygenNote: 7.3.3
+Depends: R (>= 3.5)
+Imports: optiSolve, deaR, foreach
+Suggests: doParallel
 URL: https://github.com/vjbolos/SdeaR
 BugReports: https://github.com/vjbolos/SdeaR/issues
+NeedsCompilation: no
+Packaged: 2026-06-10 17:04:36 UTC; Vicente
+Author: Vicente Bolós [aut, cre],
+  Vicente Coll-Serrano [aut],
+  Rafael Benítez Suárez [aut]

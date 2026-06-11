@@ -5,20 +5,21 @@
 \title{Chance Constrained Super-efficiency Additive E-model.}
 \usage{
 modelstoch_addsupereff(datadea,
-               alpha = 0.05,
-               dmu_eval = NULL,
-               dmu_ref = NULL,
-               orientation = NULL,
-               weight_slack_i = NULL,
-               weight_slack_o = NULL,
-               rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
-               L = 1,
-               U = 1,
-               solver = c("alabama", "cccp", "cccp2", "slsqp"),
-               n_attempts_max = 5,
-               compute_target = TRUE,
-               returnqp = FALSE,
-               ...)
+                       alpha = 0.05,
+                       dmu_eval = NULL,
+                       dmu_ref = NULL,
+                       orientation = NULL,
+                       weight_slack_i = NULL,
+                       weight_slack_o = NULL,
+                       rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
+                       L = 1,
+                       U = 1,
+                       solver = c("alabama", "cccp", "cccp2", "slsqp"),
+                       n_attempts_max = 5,
+                       compute_target = TRUE,
+                       returnqp = FALSE,
+                       parallel = FALSE,
+                       ...)
 }
 \arguments{
 \item{datadea}{The data of class \code{deadata_stoch}, including \code{n} DMUs,
@@ -69,6 +70,9 @@ projections and slacks.}
 
 \item{returnqp}{Logical. If it is \code{TRUE}, it returns the quadratic
 problems (objective function and constraints).}
+
+\item{parallel}{Logical, if \code{TRUE}, the DMUs are computed in parallel
+(default \code{FALSE}).}
 
 \item{...}{Other parameters, like the initial vector \code{X}, to be passed
 to the solver.}
