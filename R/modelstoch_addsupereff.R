@@ -75,7 +75,8 @@
 #'                        rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
 #'                        L = 1,
 #'                        U = 1,
-#'                        solver = c("alabama", "cccp", "cccp2", "slsqp"),
+#'                        solver = c("alabama"),
+#'                        X = NULL,
 #'                        n_attempts_max = 5,
 #'                        compute_target = TRUE,
 #'                        returnqp = FALSE,
@@ -110,7 +111,13 @@
 #' @param L Lower bound for the generalized returns to scale (grs).
 #' @param U Upper bound for the generalized returns to scale (grs).
 #' @param solver Character string with the name of the solver used by function \code{solvecop}
-#' from package \code{optiSolve}.
+#' from package \code{optiSolve}. Only alabama solver is currently operational, but more solvers
+#' could be implemented in the future.
+#' @param X Initial vector for the solver in the first attempt. The variables are
+#' lambdas of reference DMUs, input t, output t, input sigmas and output sigmas. It can be a matrix
+#' of \code{ne} rows (where \code{ne} is the length of \code{dmu_eval}), with different initial
+#' vectors for each evaluated DMU. If it is a vector, the same initial vector is applied to all
+#' evaluated DMUs.
 #' @param n_attempts_max A value with the maximum number of attempts if the solver
 #' does not converge. Each attempt uses a different initial vector.
 #' @param compute_target Logical. If it is \code{TRUE}, it computes targets,
@@ -119,8 +126,7 @@
 #' problems (objective function and constraints).
 #' @param parallel Logical, if \code{TRUE}, the DMUs are computed in parallel
 #' (default \code{FALSE}).
-#' @param ... Other parameters, like the initial vector \code{X}, to be passed
-#' to the solver.
+#' @param ... Other parameters to be passed to the solver.
 #'
 #' @returns A list with the results for the evaluated DMUs and other parameters
 #' for reproducibility.
@@ -158,7 +164,8 @@ modelstoch_addsupereff <-
            rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
            L = 1,
            U = 1,
-           solver = c("alabama", "cccp", "cccp2", "slsqp"),
+           solver = c("alabama"),
+           X = NULL,
            n_attempts_max = 5,
            compute_target = TRUE,
            returnqp = FALSE,
@@ -294,6 +301,20 @@ modelstoch_addsupereff <-
                  paste("sigma_I", 1:ni, sep = "_"),
                  paste("sigma_O", 1:no, sep = "_"))
     nvar <- ndr + 2 * (ni + no)
+
+    # Checking initial vector X
+    if (!is.null(X)) {
+      if (is.numeric(X) && is.vector(X)) {
+        if (length(X) != nvar)
+          stop("Incorrect number of variables for initial vector X.")
+        X <- matrix(rep(X, nde), nrow = nde, byrow = TRUE)
+      } else if (is.numeric(X) && is.matrix(X)) {
+        if (nrow(X) != nde || ncol(X) != nvar)
+          stop("Incorrect matrix X for initial vectors.")
+      } else {
+        stop("Initial vector must be a numeric vector or matrix.")
+      }
+    }
 
     target_input <- NULL
     target_output <- NULL
@@ -439,7 +460,14 @@ modelstoch_addsupereff <-
 
           while (n_attempts <= n_attempts_max) {
 
-            res <- solvecop(op = mycop, solver = solver, quiet = TRUE, ...)
+            # Initial vector
+            Xini <- NULL
+            if ((n_attempts == 1) && is.matrix(X)) {
+              Xini <- X[i, ]
+              names(Xini) <- namevar
+            }
+
+            res <- solvecop(op = mycop, solver = solver, quiet = TRUE, X = Xini, ...)
 
             if (res$status == "successful convergence") {
               n_attempts <- n_attempts_max
@@ -603,7 +631,14 @@ modelstoch_addsupereff <-
 
           while (n_attempts <= n_attempts_max) {
 
-            res <- solvecop(op = mycop, solver = solver, quiet = TRUE, ...)
+            # Initial vector
+            Xini <- NULL
+            if ((n_attempts == 1) && is.matrix(X)) {
+              Xini <- X[i, ]
+              names(Xini) <- namevar
+            }
+
+            res <- solvecop(op = mycop, solver = solver, quiet = TRUE, X = Xini, ...)
 
             if (res$status == "successful convergence") {
               n_attempts <- n_attempts_max

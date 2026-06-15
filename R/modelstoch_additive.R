@@ -75,8 +75,9 @@
 #'                     rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
 #'                     L = 1,
 #'                     U = 1,
-#'                     solver = c("alabama", "cccp", "cccp2", "slsqp"),
-#'                     give_X = TRUE,
+#'                     solver = c("alabama"),
+#'                     X = NULL,
+#'                     give_X = FALSE,
 #'                     n_attempts_max = 5,
 #'                     returnqp = FALSE,
 #'                     parallel = FALSE,
@@ -104,19 +105,24 @@
 #' @param L Lower bound for the generalized returns to scale (grs).
 #' @param U Upper bound for the generalized returns to scale (grs).
 #' @param solver Character string with the name of the solver used by function \code{solvecop}
-#' from package \code{optiSolve}.
-#' @param give_X Logical. If it is \code{TRUE}, it uses an initial vector (given by
-#' the evaluated DMU) for the solver, except for "cccp". If it is \code{FALSE},
-#' the initial vector is given internally by the solver and it is usually
-#' randomly generated.
+#' from package \code{optiSolve}. Only alabama solver is currently operational, but more solvers
+#' could be implemented in the future.
+#' @param X Initial vector for the solver in the first attempt. The variables are
+#' lambdas of reference DMUs, input slacks, output slacks, input sigmas and output sigmas. It can be a matrix
+#' of \code{ne} rows (where \code{ne} is the length of \code{dmu_eval}), with different initial
+#' vectors for each evaluated DMU. If it is a vector, the same initial vector is applied to all
+#' evaluated DMUs.
+#' @param give_X Logical. If it is \code{TRUE} and \code{X} is \code{NULL}, it makes
+#' the initial vector to be the variables corresponding to each evaluated DMU.
+#' If it is \code{FALSE} (default) and \code{X} is \code{NULL}, the initial
+#' vector is given internally by the solver (usually randomly generated).
 #' @param n_attempts_max A value with the maximum number of attempts if the solver
 #' does not converge. Each attempt uses a different initial vector.
 #' @param returnqp Logical. If it is \code{TRUE}, it returns the quadratic
 #' problems (objective function and constraints).
 #' @param parallel Logical, if \code{TRUE}, the DMUs are computed in parallel
 #' (default \code{FALSE}).
-#' @param ... Other parameters, like the initial vector \code{X}, to be passed
-#' to the solver.
+#' @param ... Other parameters to be passed to the solver.
 #'
 #' @returns A list with the results for the evaluated DMUs and other parameters
 #' for reproducibility.
@@ -160,8 +166,9 @@ modelstoch_additive <-
            rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
            L = 1,
            U = 1,
-           solver = c("alabama", "cccp", "cccp2", "slsqp"),
-           give_X = TRUE,
+           solver = c("alabama"),
+           X = NULL,
+           give_X = FALSE,
            n_attempts_max = 5,
            returnqp = FALSE,
            parallel = FALSE,
@@ -294,6 +301,20 @@ modelstoch_additive <-
                  paste("sigma_O", 1:no, sep = "_"))
     nvar <- ndr + 2 * (ni + no)
 
+    # Checking initial vector X
+    if (!is.null(X)) {
+      if (is.numeric(X) && is.vector(X)) {
+        if (length(X) != nvar)
+          stop("Incorrect number of variables for initial vector X.")
+        X <- matrix(rep(X, nde), nrow = nde, byrow = TRUE)
+      } else if (is.numeric(X) && is.matrix(X)) {
+        if (nrow(X) != nde || ncol(X) != nvar)
+          stop("Incorrect matrix X for initial vectors.")
+      } else {
+        stop("Initial vector must be a numeric vector or matrix.")
+      }
+    }
+
     ###########################
 
     # Lower and upper bounds constraints
@@ -424,12 +445,16 @@ modelstoch_additive <-
           while (n_attempts <= n_attempts_max) {
 
             # Initial vector
-            if ((n_attempts == 1) && give_X && (ii %in% dmu_ref)) {
-              Xini <- rep(0, nvar)
-              Xini[which(dmu_ref == ii)] <- 1
-              names(Xini) <- namevar
-            } else {
-              Xini <- NULL
+            Xini <- NULL
+            if (n_attempts == 1) {
+              if (is.matrix(X)) {
+                Xini <- X[i, ]
+                names(Xini) <- namevar
+              } else if (give_X && (ii %in% dmu_ref)) {
+                Xini <- rep(0, nvar)
+                Xini[which(dmu_ref == ii)] <- 1
+                names(Xini) <- namevar
+              }
             }
 
             res <- solvecop(op = mycop, solver = solver, quiet = TRUE, X = Xini, ...)
@@ -552,12 +577,16 @@ modelstoch_additive <-
           while (n_attempts <= n_attempts_max) {
 
             # Initial vector
-            if ((n_attempts == 1) && give_X && (ii %in% dmu_ref)) {
-              Xini <- rep(0, nvar)
-              Xini[which(dmu_ref == ii)] <- 1
-              names(Xini) <- namevar
-            } else {
-              Xini <- NULL
+            Xini <- NULL
+            if (n_attempts == 1) {
+              if (is.matrix(X)) {
+                Xini <- X[i, ]
+                names(Xini) <- namevar
+              } else if (give_X && (ii %in% dmu_ref)) {
+                Xini <- rep(0, nvar)
+                Xini[which(dmu_ref == ii)] <- 1
+                names(Xini) <- namevar
+              }
             }
 
             res <- solvecop(op = mycop, solver = solver, quiet = TRUE, X = Xini, ...)

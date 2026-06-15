@@ -20,8 +20,8 @@
 #' If \code{NULL} (default), all DMUs are considered.
 #' @param parallel Logical, if \code{TRUE}, the DMUs are computed in parallel
 #' (default \code{FALSE}).
-#' @param ... Model parameters like \code{orientation} or \code{rts}, and other
-#' parameters to be passed to the solver.
+#' @param ... Model parameters like \code{orientation} or \code{rts} to be passed
+#' to \code{modelstoch_radial}, and other parameters to be passed to the solver.
 #'
 #' @returns A list with the results for the evaluated DMUs and other parameters
 #' for reproducibility.
