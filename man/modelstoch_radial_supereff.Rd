@@ -23,8 +23,8 @@ If \code{NULL} (default), all DMUs are considered.}
 \item{parallel}{Logical, if \code{TRUE}, the DMUs are computed in parallel
 (default \code{FALSE}).}
 
-\item{...}{Model parameters like \code{orientation} or \code{rts}, and other
-parameters to be passed to the solver.}
+\item{...}{Model parameters like \code{orientation} or \code{rts} to be passed
+to \code{modelstoch_radial}, and other parameters to be passed to the solver.}
 }
 \value{
 A list with the results for the evaluated DMUs and other parameters

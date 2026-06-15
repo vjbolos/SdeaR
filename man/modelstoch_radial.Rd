@@ -12,8 +12,9 @@ modelstoch_radial(datadea,
                   rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
                   L = 1,
                   U = 1,
-                  solver = c("alabama", "cccp", "cccp2", "slsqp"),
-                  give_X = TRUE,
+                  solver = c("alabama"),
+                  X = NULL,
+                  give_X = FALSE,
                   n_attempts_max = 5,
                   maxslack = FALSE,
                   weight_slack_i = 1,
@@ -50,11 +51,19 @@ oriented).}
 \item{U}{Upper bound for the generalized returns to scale (grs).}
 
 \item{solver}{Character string with the name of the solver used by function \code{solvecop}
-from package \code{optiSolve}.}
+from package \code{optiSolve}. Only alabama solver is currently operational, but more solvers
+could be implemented in the future.}
 
-\item{give_X}{Logical. If it is \code{TRUE}, it uses an initial vector (given by
-the evaluated DMU) for the solver, except for "cccp". If it is \code{FALSE}, the initial vector is given
-internally by the solver and it is usually randomly generated.}
+\item{X}{Initial vector for the solver in the first attempt. The variables are
+efficiency, lambdas of reference DMUs, input sigmas and output sigmas. It can be a matrix
+of \code{ne} rows (where \code{ne} is the length of \code{dmu_eval}), with different initial
+vectors for each evaluated DMU. If it is a vector, the same initial vector is applied to all
+evaluated DMUs.}
+
+\item{give_X}{Logical. If it is \code{TRUE} and \code{X} is \code{NULL}, it makes
+the initial vector to be the variables corresponding to each evaluated DMU.
+If it is \code{FALSE} (default) and \code{X} is \code{NULL}, the initial
+vector is given internally by the solver (usually randomly generated).}
 
 \item{n_attempts_max}{A value with the maximum number of attempts if the solver
 does not converge. Each attempt uses a different initial vector.}
@@ -89,7 +98,7 @@ max slack solution.}
 \item{parallel}{Logical, if \code{TRUE}, the DMUs are computed in parallel
 (default \code{FALSE}).}
 
-\item{...}{Other parameters, like the initial vector \code{X}, to be passed to the solver.}
+\item{...}{Other parameters to be passed to the solver.}
 }
 \value{
 A list with the results for the evaluated DMUs and other parameters

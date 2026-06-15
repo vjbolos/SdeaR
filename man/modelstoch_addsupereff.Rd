@@ -14,7 +14,8 @@ modelstoch_addsupereff(datadea,
                        rts = c("crs", "vrs", "nirs", "ndrs", "grs"),
                        L = 1,
                        U = 1,
-                       solver = c("alabama", "cccp", "cccp2", "slsqp"),
+                       solver = c("alabama"),
+                       X = NULL,
                        n_attempts_max = 5,
                        compute_target = TRUE,
                        returnqp = FALSE,
@@ -60,7 +61,14 @@ If \code{weight_slack_o} is the matrix of the inverses of outputs of DMUS in
 \item{U}{Upper bound for the generalized returns to scale (grs).}
 
 \item{solver}{Character string with the name of the solver used by function \code{solvecop}
-from package \code{optiSolve}.}
+from package \code{optiSolve}. Only alabama solver is currently operational, but more solvers
+could be implemented in the future.}
+
+\item{X}{Initial vector for the solver in the first attempt. The variables are
+lambdas of reference DMUs, input t, output t, input sigmas and output sigmas. It can be a matrix
+of \code{ne} rows (where \code{ne} is the length of \code{dmu_eval}), with different initial
+vectors for each evaluated DMU. If it is a vector, the same initial vector is applied to all
+evaluated DMUs.}
 
 \item{n_attempts_max}{A value with the maximum number of attempts if the solver
 does not converge. Each attempt uses a different initial vector.}
@@ -74,8 +82,7 @@ problems (objective function and constraints).}
 \item{parallel}{Logical, if \code{TRUE}, the DMUs are computed in parallel
 (default \code{FALSE}).}
 
-\item{...}{Other parameters, like the initial vector \code{X}, to be passed
-to the solver.}
+\item{...}{Other parameters to be passed to the solver.}
 }
 \value{
 A list with the results for the evaluated DMUs and other parameters
