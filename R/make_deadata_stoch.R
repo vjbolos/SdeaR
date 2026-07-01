@@ -231,36 +231,58 @@
 #' var_output <- matrix(c^2, nrow = 3, ncol = 49)
 #' PFT_stoch <- make_deadata_stoch(datadea = PFT, var_output = var_output)
 #'
-#' # Example 4. 5 random observations of 3 DMUs with 2 inputs and 2 outputs.
+#' # Example 4. Random observations.
+#'
 #' library(deaR)
-#' # Generate random observations.
-#' input1 <- data.frame(I1D1 = rnorm(5, mean = sample(5:10, 1)),
-#'                      I1D2 = rnorm(5, mean = sample(5:10, 1)),
-#'                      I1D3 = rnorm(5, mean = sample(5:10, 1)))
-#' input2 <- data.frame(I2D1 = rnorm(5, mean = sample(5:10, 1)),
-#'                      I2D2 = rnorm(5, mean = sample(5:10, 1)),
-#'                      I2D3 = rnorm(5, mean = sample(5:10, 1)))
-#' output1 <- data.frame(O1D1 = rnorm(5, mean = sample(5:10, 1)),
-#'                       O1D2 = rnorm(5, mean = sample(5:10, 1)),
-#'                       O1D3 = rnorm(5, mean = sample(5:10, 1)))
-#' output2 <- data.frame(O2D1 = rnorm(5, mean = sample(5:10, 1)),
-#'                       O2D2 = rnorm(5, mean = sample(5:10, 1)),
-#'                       O2D3 = rnorm(5, mean = sample(5:10, 1)))
-#' # Generate deadata with means of observations.
-#' inputs <- matrix(mapply(mean, cbind(input1, input2)),
-#'                  nrow = 2,
-#'                  ncol = 3,
-#'                  byrow = TRUE,
-#'                  dimnames = list(c("I1", "I2"), c("D1", "D2", "D3")))
-#' outputs <- matrix(mapply(mean, cbind(output1, output2)),
-#'                   nrow = 2,
-#'                   ncol = 3,
-#'                   byrow = TRUE,
-#'                   dimnames = list(c("O1", "O2"), c("D1", "D2", "D3")))
+#'
+#' nobs <- 5 # number of observations
+#' ni <- 2   # number of inputs
+#' no <- 2   # number of outputs
+#' nd <- 3   # number of DMUs
+#'
+#' # Generator function
+#' gen_df <- function(nobs, nd) {
+#'   as.data.frame(
+#'     replicate(nd, rnorm(nobs, mean = sample(5:10, 1)))
+#'   )
+#' }
+#'
+#' # Generate random observations
+#' inputs_list <- lapply(seq_len(ni), \(i) {
+#'   df <- gen_df(nobs, nd)
+#'   names(df) <- paste0("I", i, "D", seq_len(nd))
+#'   df
+#' })
+#' outputs_list <- lapply(seq_len(no), \(i) {
+#'   df <- gen_df(nobs, nd)
+#'   names(df) <- paste0("O", i, "D", seq_len(nd))
+#'   df
+#' })
+#'
+#' # Generate deadata with means of observations
+#' inputs <- do.call(
+#'   rbind,
+#'   lapply(inputs_list, colMeans)
+#' )
+#' rownames(inputs)  <- paste0("I", seq_len(ni))
+#' colnames(inputs)  <- paste0("D", seq_len(nd))
+#' outputs <- do.call(
+#'   rbind,
+#'   lapply(outputs_list, colMeans)
+#' )
+#' rownames(outputs) <- paste0("O", seq_len(no))
+#' colnames(outputs) <- colnames(inputs)
 #' datadea <- make_deadata(inputs = inputs,
 #'                         outputs = outputs)
-#' # Generate covariances matrix cov_matrix.
-#' cov_matrix <- cov(cbind(input1, input2, output1, output2))
+#'
+#' # Generate covariances matrix
+#' cov_matrix <- cov(
+#'   do.call(
+#'     cbind,
+#'     c(inputs_list, outputs_list)
+#'   )
+#' )
+#'
 #' # Generate deadata_stoch
 #' datadea_stoch <- make_deadata_stoch(datadea,
 #'                                     cov_matrix = cov_matrix)
